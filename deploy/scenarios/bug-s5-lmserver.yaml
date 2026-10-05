@@ -1,0 +1,9 @@
+# Kept as evidence: scenario 5 with the chart's own shared server (lmcache_server, lm://).
+# Doesn't work with LMCache 0.5.5: every request gains ~3 s (lookup RPC timeouts) and pod B
+# never gets a hit. Root cause not established; see docs/REPORT.md Appendix F.
+# The working scenario 5 uses Redis: s5-shared.yaml.
+podB: 1
+bench: --docs 4 --peer http://kv-pod-b-engine-service
+engine:
+  lmcacheConfig: { enabled: true, cpuOffloadingBufferSize: "4" }
+cacheserverSpec: { enabled: true }

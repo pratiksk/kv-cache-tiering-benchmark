@@ -1,0 +1,17 @@
+scenario,run,seq,doc,question,expected,prompt_tokens,cached_tokens,ttft_ms,total_ms,target
+s5-shared,3,0,0,0,first,10023,0,1413.2,1488.5,http://kv-pod-a-engine-service
+s5-shared,3,1,0,1,cross,10023,9984,411.5,489.3,http://kv-pod-b-engine-service
+s5-shared,3,2,0,2,resident,10023,10000,51.6,129.7,http://kv-pod-b-engine-service
+s5-shared,3,3,0,3,resident,10023,10000,53.0,130.4,http://kv-pod-a-engine-service
+s5-shared,3,4,1,0,first,10023,0,1417.8,1494.1,http://kv-pod-a-engine-service
+s5-shared,3,5,1,1,cross,10023,9984,436.2,513.7,http://kv-pod-b-engine-service
+s5-shared,3,6,1,2,resident,10023,10000,57.5,136.0,http://kv-pod-b-engine-service
+s5-shared,3,7,1,3,resident,10023,10000,53.5,130.7,http://kv-pod-a-engine-service
+s5-shared,3,8,2,0,first,10022,0,1421.7,1498.7,http://kv-pod-a-engine-service
+s5-shared,3,9,2,1,cross,10022,9984,455.0,532.2,http://kv-pod-b-engine-service
+s5-shared,3,10,2,2,resident,10022,10000,52.2,130.1,http://kv-pod-b-engine-service
+s5-shared,3,11,2,3,resident,10022,10000,52.7,130.7,http://kv-pod-a-engine-service
+s5-shared,3,12,3,0,first,10024,0,1427.8,1504.0,http://kv-pod-a-engine-service
+s5-shared,3,13,3,1,cross,10024,9984,451.6,528.5,http://kv-pod-b-engine-service
+s5-shared,3,14,3,2,resident,10024,10000,51.9,129.0,http://kv-pod-b-engine-service
+s5-shared,3,15,3,3,resident,10024,10000,53.3,131.0,http://kv-pod-a-engine-service

@@ -1,0 +1,7 @@
+# Scenario 1: no caching. Every request runs full prefill.
+podB: 0
+bench: --docs 20
+engine:
+  vllmConfig: { enablePrefixCaching: false }
+  lmcacheConfig: { enabled: false }
+cacheserverSpec: { enabled: false }

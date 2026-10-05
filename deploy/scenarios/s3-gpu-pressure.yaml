@@ -1,0 +1,7 @@
+# Scenario 3: same engine config as scenario 2, but 20 documents (200K tokens, ~4x the
+# GPU cache). Documents revisited after a full pass have been evicted from GPU memory.
+podB: 0
+bench: --docs 20
+engine:
+  lmcacheConfig: { enabled: false }
+cacheserverSpec: { enabled: false }

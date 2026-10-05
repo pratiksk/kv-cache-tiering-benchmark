@@ -1,0 +1,42 @@
+# Scenario 5: two engines sharing KV through Redis. Pod A computes a document; pod B's
+# first request for it should load the KV from Redis instead of prefilling.
+#
+# Uses Redis instead of the chart's lmcache_server, which didn't work with LMCache 0.5.5
+# (see bug-s5-lmserver.yaml and docs/REPORT.md Appendix F).
+podB: 1
+bench: --docs 4 --peer http://kv-pod-b-engine-service
+engine:
+  lmcacheConfig: { enabled: true, cpuOffloadingBufferSize: "4" }
+  env:
+    - { name: LMCACHE_REMOTE_URL, value: "redis://kv-redis:6379" }
+    - { name: LMCACHE_REMOTE_SERDE, value: naive }
+cacheserverSpec: { enabled: false }
+
+# 4 documents x ~369 MB of KV = ~1.5 GB. No persistence: a restart empties it, which is
+# how bench.sh resets it between runs.
+extraObjects:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: kv-redis, labels: { app: kv-redis } }
+    spec:
+      replicas: 1
+      selector: { matchLabels: { app: kv-redis } }
+      template:
+        metadata: { labels: { app: kv-redis } }
+        spec:
+          containers:
+            - name: redis
+              image: redis:8.10.2-alpine
+              args: ["--save", "", "--appendonly", "no", "--maxmemory", "3gb", "--maxmemory-policy", "allkeys-lru"]
+              ports: [{ containerPort: 6379 }]
+              env:
+                - { name: NVIDIA_VISIBLE_DEVICES, value: void }
+              resources:
+                requests: { cpu: 500m, memory: 512Mi }
+                limits: { memory: 4Gi }
+  - apiVersion: v1
+    kind: Service
+    metadata: { name: kv-redis }
+    spec:
+      selector: { app: kv-redis }
+      ports: [{ port: 6379, targetPort: 6379 }]

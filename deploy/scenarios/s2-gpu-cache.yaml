@@ -1,0 +1,7 @@
+# Scenario 2: vLLM GPU prefix cache only. 4 documents (40K tokens) fit in the
+# ~47.6K-token GPU cache, so every repeat question should hit.
+podB: 0
+bench: --docs 4
+engine:
+  lmcacheConfig: { enabled: false }
+cacheserverSpec: { enabled: false }

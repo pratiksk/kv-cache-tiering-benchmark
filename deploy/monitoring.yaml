@@ -1,0 +1,43 @@
+# kube-prometheus-stack trimmed for one small node: Prometheus, Grafana,
+# node-exporter (host RAM) and kube-state-metrics. No Alertmanager, no rule packs.
+defaultRules:
+  create: false
+alertmanager:
+  enabled: false
+
+# k3s runs these inside one binary; there is nothing separate to scrape.
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeEtcd: { enabled: false }
+kubeProxy: { enabled: false }
+
+prometheus:
+  prometheusSpec:
+    # Pick up ServiceMonitors from any release, not only this one.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    scrapeInterval: 10s
+    retention: 7d
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits: { memory: 1536Mi }
+
+grafana:
+  # Admin password is generated; `make grafana` prints it.
+  # Headless-Chromium renderer, so panels can be exported as PNG (UI and /render API).
+  imageRenderer:
+    enabled: true
+    env:
+      NVIDIA_VISIBLE_DEVICES: void
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { memory: 1Gi }
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { memory: 1Gi }   # 384Mi was OOMKilled while serving image renders

@@ -1,0 +1,94 @@
+# Base values for the vLLM production stack. Scenario overlays in scenarios/ override this.
+#
+# Two engines, each its own Deployment and Service so the benchmark can address them
+# directly: pod-a and pod-b. Both serve the same model, so the router treats them as
+# two endpoints for it. pod-b starts only after pod-a is Ready (see deploy.sh), because
+# vLLM sizes its KV cache from GPU memory that is free at startup.
+#
+# GPU budget: the L4 has ~22.5 GiB. 0.4 each = ~9 GiB per engine; ~6.2 GiB of that is
+# weights, leaving ~2.5-3 GiB of KV (about 70-80K tokens at 36 KiB/token).
+servingEngineSpec:
+  runtimeClassName: ""          # k3s already defaults to the nvidia runtime
+  imagePullPolicy: IfNotPresent # the engine image is ~9 GB; never re-pull on restart
+  # Stop the old engine before starting the new one. A rolling update would need a third
+  # GPU slot (two exist) and would leave the old engine holding its GPU memory.
+  strategy:
+    type: Recreate
+  startupProbe:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 120       # first start downloads ~6 GB of weights
+    httpGet: { path: /health, port: 8000 }
+  serviceMonitor:
+    enabled: true
+    interval: 10s
+    scrapeTimeout: 8s
+
+  modelSpec:
+    - name: pod-a
+      repository: lmcache/vllm-openai   # tag, model and revision come from versions.env
+      replicaCount: 1
+      requestCPU: 2
+      requestMemory: 6Gi
+      limitMemory: 12Gi         # vLLM process (~3-4 GiB) + LMCache CPU tier
+      requestGPU: 1
+      pvcStorage: 20Gi
+      shmSize: 2Gi
+      vllmConfig:
+        enablePrefixCaching: true
+        maxModelLen: 16384
+        maxNumSeqs: 8
+        gpuMemoryUtilization: 0.4
+        extraArgs: ["--enable-prompt-tokens-details"]   # per-request cached_tokens in usage
+      lmcacheConfig:
+        enabled: true
+        cpuOffloadingBufferSize: "4"   # GB of pinned host RAM per engine
+    - name: pod-b
+      repository: lmcache/vllm-openai   # tag, model and revision come from versions.env
+      replicaCount: 1
+      requestCPU: 2
+      requestMemory: 6Gi
+      limitMemory: 12Gi         # vLLM process (~3-4 GiB) + LMCache CPU tier
+      requestGPU: 1
+      pvcStorage: 20Gi
+      shmSize: 2Gi
+      vllmConfig:
+        enablePrefixCaching: true
+        maxModelLen: 16384
+        maxNumSeqs: 8
+        gpuMemoryUtilization: 0.4
+        extraArgs: ["--enable-prompt-tokens-details"]   # per-request cached_tokens in usage
+      lmcacheConfig:
+        enabled: true
+        cpuOffloadingBufferSize: "4"   # GB of pinned host RAM per engine
+
+cacheserverSpec:
+  enabled: true
+  image:
+    repository: lmcache/vllm-openai   # tag from versions.env
+  imagePullPolicy: IfNotPresent
+  serde: naive
+  # The chart's probe runs examples/kubernetes/health_probe.py, which is not in the v0.5.5
+  # image: it always fails, and each kill wipes the shared cache. No probe instead.
+  livenessProbe: null
+  resources:
+    requests: { cpu: "1", memory: 1Gi }
+    limits: { memory: 6Gi }     # the server has no size cap of its own
+
+routerSpec:
+  repository: lmcache/lmstack-router   # tag from versions.env
+  imagePullPolicy: IfNotPresent
+  routingLogic: roundrobin
+  # Chart default allows ~20 s; the router's cold start is slower and got killed (exit 137).
+  startupProbe:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    failureThreshold: 24
+    httpGet: { path: /health, port: router-port }
+  serviceMonitor:
+    enabled: true
+    interval: 10s
+    scrapeTimeout: 8s
+
+grafanaDashboards:
+  enabled: true

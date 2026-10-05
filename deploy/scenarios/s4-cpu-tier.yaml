@@ -1,0 +1,8 @@
+# Scenario 4: scenario 3 plus an LMCache CPU tier big enough for all 20 documents
+# (20 x ~369 MB = ~7.4 GB). With pod-b off, pod-a can use ~10 GB of host RAM for it.
+podB: 0
+bench: --docs 20
+engine:
+  limitMemory: 18Gi
+  lmcacheConfig: { enabled: true, cpuOffloadingBufferSize: "10" }
+cacheserverSpec: { enabled: false }

@@ -1,0 +1,3 @@
+alert_email = "you@example.com"
+# instance_type     = "g6.4xlarge"
+# availability_zone = "us-east-1b"
